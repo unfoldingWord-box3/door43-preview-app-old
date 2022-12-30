@@ -249,7 +249,7 @@ export default function SelectBookPopup(
     >
       <Card
         closeable
-        title={`Select a Book`}
+        title={`Select a Resource`}
         onClose={handleClickClose}
         classes={{
           dragIndicator: 'draggable-dialog-title',

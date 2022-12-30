@@ -1,17 +1,11 @@
 import React, { createContext, useContext, useState } from 'react'
 import PropTypes from 'prop-types'
 import useLocalStorage from '@hooks/useLocalStorage'
-import * as useULS from '@hooks/useUserLocalStorage'
-import { AuthContext } from '@context/AuthContext'
 import useSaveChangesPrompt from '@hooks/useSaveChangesPrompt'
 
 export const StoreContext = createContext({})
 export default function StoreContextProvider(props) {
-  const {
-    state: { authentication, networkError: tokenNetworkError, server },
-    actions: { logout, setNetworkError: setTokenNetworkError, setServer },
-  } = useContext(AuthContext)
-  const username = authentication?.user?.username || ''
+  const username = ''
 
   /**
    * wrapper for useULS.useUserLocalStorage that applies current username
@@ -20,23 +14,25 @@ export default function StoreContextProvider(props) {
    * @return {any[]}
    */
   function useUserLocalStorage(key, initialValue) {
-    return useULS.useUserLocalStorage(username, key, initialValue)
+    return useLocalStorage(key, initialValue)
   }
 
+  const [server, setServer] = useLocalStorage('server', 'git.door43.org')
   const [mainScreenRef, setMainScreenRef] = useState(null)
   const [lastError, setLastError] = useState(null)
-  const [owner, setOwner] = useUserLocalStorage('owner', '')
-  const [languageId, setLanguageId] = useUserLocalStorage('languageId', '')
+  const [owner, setOwner] = useLocalStorage('owner', '')
+  const [repo, setRepo] = useLocalStorage('repo', '')
+  const [languageId, setLanguageId] = useLocalStorage('languageId', '')
   const [showAccountSetup, setShowAccountSetup] = useLocalStorage(
     'showAccountSetup',
     true
   )
   const [taArticle, setTaArticle] = useState(null)
-  const [selectedQuote, setQuote] = useUserLocalStorage('selectedQuote', null)
+  const [selectedQuote, setQuote] = useLocalStorage('selectedQuote', null)
   // TODO blm: for now we use unfoldingWord for original language bibles
   const [scriptureOwner, setScriptureOwner] = useState('unfoldingWord')
-  const [appRef, setAppRef] = useUserLocalStorage('appRef', 'master') // default for app
-  const [bibleReference, setBibleReference] = useUserLocalStorage(
+  const [appRef, setAppRef] = useLocalStorage('appRef', 'master') // default for app
+  const [bibleReference, setBibleReference] = useLocalStorage(
     'bibleReference',
     {
       bookId: 'mat',
@@ -44,14 +40,13 @@ export default function StoreContextProvider(props) {
       verse: '1',
     }
   )
-
   const [greekRepoUrl, setGreekRepoUrl] = useLocalStorage('greekRepoUrl', null)
   const [hebrewRepoUrl, setHebrewRepoUrl] = useLocalStorage(
     'hebrewRepoUrl',
     null
   )
   const [supportedBibles, setSupportedBibles] = useLocalStorage('bibles', [])
-  const [currentLayout, setCurrentLayout] = useUserLocalStorage(
+  const [currentLayout, setCurrentLayout] = useLocalStorage(
     'resourceLayout',
     null
   )
@@ -65,6 +60,7 @@ export default function StoreContextProvider(props) {
 
   function onReferenceChange(bookId, chapter, verse) {
     setQuote(null)
+    console.log("oRC", bookId, chapter, verse)
     setBibleReference(prevState => ({
       ...prevState,
       bookId,
@@ -101,17 +97,13 @@ export default function StoreContextProvider(props) {
       supportedBibles,
       currentLayout,
       useUserLocalStorage,
-      loggedInUser: username,
-      authentication,
       lastError,
-      tokenNetworkError,
       greekRepoUrl,
       hebrewRepoUrl,
       mainScreenRef,
       savedChanges,
     },
     actions: {
-      logout,
       onReferenceChange,
       setShowAccountSetup,
       setScriptureOwner,
@@ -120,10 +112,10 @@ export default function StoreContextProvider(props) {
       setServer,
       setQuote,
       setOwner,
+      setRepo,
       setSupportedBibles,
       setCurrentLayout,
       setLastError,
-      setTokenNetworkError,
       updateTaDetails,
       setGreekRepoUrl,
       setHebrewRepoUrl,

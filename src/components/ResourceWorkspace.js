@@ -3,7 +3,6 @@ import { useContext, useEffect, useState } from 'react'
 
 import { Workspace } from 'resource-workspace-rcl'
 import { makeStyles } from '@mui/styles'
-
 import { AppContext } from '@context/AppContext'
 import CircularProgress from '@components/CircularProgress'
 import {
@@ -15,7 +14,7 @@ import {
 import { useRouter } from 'next/router'
 import { HTTP_CONFIG } from '@common/constants'
 import NetworkErrorPopup from '@components/NetworkErrorPopUp'
-import ScriptureWorkspaceCard from './ScriptureWorkspaceCard'
+import ResourceWorkspaceCard from './ResourceWorkspaceCard'
 import useStoreContext from '@hooks/useStoreContext'
 import EmptyMessage from './EmptyMessage'
 
@@ -35,8 +34,9 @@ const useStyles = makeStyles(() => ({
   },
 }))
 
-function ScriptureWorkspace() {
+function ResourceWorkspace() {
   const router = useRouter()
+  console.log(router.query);
   const classes = useStyles()
   const [workspaceReady, setWorkspaceReady] = useState(false)
   const [networkError, setNetworkError] = useState(null)
@@ -55,40 +55,30 @@ function ScriptureWorkspace() {
 
   const {
     state: {
-      owner,
       server,
       appRef,
+      owner,
+      repo,
       languageId,
       currentLayout,
-      loggedInUser,
-      tokenNetworkError,
     },
-    actions: { logout, setCurrentLayout, setTokenNetworkError, setLastError },
+    actions: {
+      setCurrentLayout,
+      setLastError,
+      setOwner,
+      setRepo,
+      setLanguageId,
+      setAppRef,
+      onReferenceChange,
+    },
   } = useStoreContext()
 
   /**
-   * show either tokenNetworkError or NetworkError for workspace
+   * show NetworkError for workspace
    * @return {JSX.Element|null}
    */
   function showNetworkError() {
-    if (tokenNetworkError) {
-      // if we had a token network error on startup
-      if (!tokenNetworkError.router) {
-        // needed for reload of page
-        setTokenNetworkError({ ...tokenNetworkError, router }) // make sure router is set
-      }
-      return (
-        <NetworkErrorPopup
-          networkError={tokenNetworkError}
-          setNetworkError={error => {
-            setTokenNetworkError(error)
-            setNetworkError(null) // clear this flag in case it was also set
-          }}
-          hideClose={true}
-          onRetry={reloadApp}
-        />
-      )
-    } else if (networkError) {
+    if (networkError) {
       // for all other workspace network errors
       return (
         <NetworkErrorPopup
@@ -128,7 +118,6 @@ function ScriptureWorkspace() {
         processNetworkError(
           error || message,
           resourceStatus,
-          logout,
           router,
           setNetworkError,
           setLastError,
@@ -140,7 +129,6 @@ function ScriptureWorkspace() {
           addNetworkDisconnectError(
             error || message,
             0,
-            logout,
             router,
             setNetworkError,
             setLastError
@@ -151,20 +139,35 @@ function ScriptureWorkspace() {
   }
 
   useEffect(() => {
+    console.log(router.query);
+    const { owner, repo, refEtc } = router.query;
+    console.log("HERE: ", owner, repo, refEtc)
+    if (owner && repo) {
+      setOwner(owner)
+      setRepo(repo)
+      setLanguageId(repo.split('_')[0])
+      if (refEtc && refEtc[0])
+        setAppRef(refEtc[0])
+      if (refEtc && refEtc[1])
+        onReferenceChange(refEtc[1], "1", "1")
+    }
+  }, [router.query])
+
+  useEffect(() => {
     setWorkspaceReady(false)
 
-    if (owner && languageId && appRef && server && loggedInUser) {
+    if (owner && languageId && appRef && server) {
       // clearCaches()
       setWorkspaceReady(true)
     } // eslint-disable-next-line
-  }, [owner, languageId, appRef, server, loggedInUser])
+  }, [owner, languageId, appRef, server])
 
   const config = {
     server,
     ...HTTP_CONFIG,
   }
 
-  return tokenNetworkError || networkError || !workspaceReady ? (
+  return networkError || !workspaceReady ? (
     // Do not render workspace until user logged in and we have user settings
     <>
       {showNetworkError()}
@@ -243,7 +246,7 @@ function ScriptureWorkspace() {
       ]}
     >
       {books.map(data => (
-        <ScriptureWorkspaceCard
+        <ResourceWorkspaceCard
           key={data.id}
           id={data.id}
           bookId={data.bookId}
@@ -262,4 +265,4 @@ function ScriptureWorkspace() {
   )
 }
 
-export default ScriptureWorkspace
+export default ResourceWorkspace

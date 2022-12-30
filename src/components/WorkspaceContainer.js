@@ -44,13 +44,10 @@ function WorkspaceContainer() {
       appRef,
       languageId,
       currentLayout,
-      loggedInUser,
-      tokenNetworkError,
     },
     actions: {
       logout,
       setCurrentLayout,
-      setTokenNetworkError,
       setLastError,
     },
   } = useContext(StoreContext)
@@ -65,26 +62,11 @@ function WorkspaceContainer() {
   }
 
   /**
-   * show either tokenNetworkError or NetworkError for workspace
+   * show NetworkError for workspace
    * @return {JSX.Element|null}
    */
   function showNetworkError() {
-    if (tokenNetworkError) { // if we had a token network error on startup
-      if (!tokenNetworkError.router) { // needed for reload of page
-        setTokenNetworkError({ ...tokenNetworkError, router }) // make sure router is set
-      }
-      return (
-        <NetworkErrorPopup
-          networkError={tokenNetworkError}
-          setNetworkError={(error) => {
-            setTokenNetworkError(error)
-            setNetworkError(null) // clear this flag in case it was also set
-          }}
-          hideClose={true}
-          onRetry={reloadApp}
-        />
-      )
-    } else if (networkError) { // for all other workspace network errors
+    if (networkError) { // for all other workspace network errors
       return (
         <NetworkErrorPopup
           networkError={networkError}
@@ -126,10 +108,10 @@ function WorkspaceContainer() {
   useEffect(() => {
     setWorkspaceReady(false)
 
-    if (owner && languageId && appRef && server && loggedInUser) {
+    if (owner && languageId && appRef && server) {
       setWorkspaceReady(true)
     }// eslint-disable-next-line
-  }, [owner, languageId, appRef, server, loggedInUser])
+  }, [owner, languageId, appRef, server])
 
 
 
@@ -155,7 +137,7 @@ function WorkspaceContainer() {
   ]
 
   return (
-    (tokenNetworkError || networkError || !workspaceReady) ? // Do not render workspace until user logged in and we have user settings
+    (networkError || !workspaceReady) ? // Do not render workspace until user logged in and we have user settings
       <>
         {showNetworkError()}
         <CircularProgress size={180} />

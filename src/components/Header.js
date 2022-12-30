@@ -9,15 +9,15 @@ import Toolbar from '@mui/material/Toolbar'
 import MenuIcon from '@mui/icons-material/Menu'
 import AppBar from '@mui/material/AppBar'
 import Fab from '@mui/material/Fab'
-import AddIcon from '@mui/icons-material/Add'
+import SearchIcon from '@mui/icons-material/Search'
 import Drawer from '@components/Drawer'
 import Snackbar from '@mui/material/Snackbar'
-import { AuthContext } from '@context/AuthContext'
 import { StoreContext } from '@context/StoreContext'
 import { AppContext } from '@context/AppContext'
 import FeedbackPopup from '@components/FeedbackPopup'
 import SelectBookPopup from './SelectBookPopup'
 import { randomLetters } from '@utils/randomLetters'
+import BibleReference from '@components/BibleReference'
 
 const useStyles = makeStyles(theme => ({
   root: { flexGrow: 1 },
@@ -44,20 +44,15 @@ const useStyles = makeStyles(theme => ({
 export default function Header({
   title,
   resetResourceLayout,
-  authentication,
   feedback,
   setFeedback,
 }) {
-  const { user } = authentication
   const classes = useStyles()
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
   const [alreadyOpenNotice, setAlreadyOpenNotice] = useState(false)
 
   const [drawerOpen, setOpen] = useState(false)
-  const {
-    actions: { logout },
-  } = useContext(AuthContext)
   const {
     state: { owner },
     actions: { checkUnsavedChanges },
@@ -196,33 +191,34 @@ export default function Header({
               {title}
             </Typography>
           </div>
-          <>
-            {user && owner && router.pathname === '/' && (
+          {router.pathname.startsWith('/u/') && (
+          <div className='flex flex-1 justify-center items-center'>
+            <BibleReference />
+          </div>)}
+          <div className='flex flex-1 justify-end'>
+          {router.pathname === '/' && (
+            <>
               <Fab
                 color='primary'
-                aria-label='add'
+                aria-label='extended'
                 variant='extended'
                 onClick={() => {
                   setShowModal(true)
                 }}
               >
-                <AddIcon className={classes.extendedIcon} />
-                Book
+                <SearchIcon className={classes.extendedIcon} />
+                Search
               </Fab>
-            )}
-          </>
-          <>
-            <SelectBookPopup
-              onNext={onNext}
-              showModal={showModal}
-              setShowModal={setShowModal}
-            />
-          </>
+              <SelectBookPopup
+                onNext={onNext}
+                showModal={showModal}
+                setShowModal={setShowModal}
+              />
+            </>)}
+          </div>
         </Toolbar>
       </AppBar>
       <Drawer
-        user={user}
-        logout={logout}
         open={drawerOpen}
         onOpen={handleDrawerOpen}
         onClose={handleDrawerClose}
@@ -247,7 +243,6 @@ export default function Header({
 
 Header.propTypes = {
   title: PropTypes.string,
-  authentication: PropTypes.object,
   resetResourceLayout: PropTypes.func,
   storeContext: PropTypes.object,
   feedback: PropTypes.bool,
