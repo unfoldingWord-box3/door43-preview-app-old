@@ -1,21 +1,16 @@
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import PropTypes from 'prop-types'
-import { AuthContext } from '@context/AuthContext'
 import Header from '@components/Header'
 import Footer from '@components/Footer'
 import { StoreContext } from '@context/StoreContext'
 import { getBuildId } from '@utils/build'
 import { APP_NAME, BASE_URL, PROD, QA, QA_BASE_URL } from '@common/constants'
-import useValidateAccountSettings from '@hooks/useValidateAccountSettings'
 import { useRouter } from 'next/router'
 
 export default function Layout({ children, showChildren, title = APP_NAME }) {
   const router = useRouter()
   const mainScreenRef = useRef(null)
   const [feedback, setFeedback_] = useState(null) // contains feedback data
-  const {
-    state: { authentication },
-  } = useContext(AuthContext)
 
   function setFeedback(enable) {
     const feedbackDisplayed = !!feedback
@@ -57,39 +52,24 @@ export default function Layout({ children, showChildren, title = APP_NAME }) {
           `_app.js - On init switching server to: ${serverID_}, url server param '${params.server}', old server ${server}, reloading page`
         )
         setServer(server_) // persist server selection in localstorage
-        router.push(`/?server=${serverID_}`) // reload page
+        console.log("PUSHING TO ROUTER!", serverID_)
+        // router.push(`/?server=${serverID_}`) // reload page
       }
     }
-  }, [router?.query]) // TRICKY query property not loaded on first pass, so watch for change
+  }, []) // TRICKY query property not loaded on first pass, so watch for change
 
   const buildId = useMemo(getBuildId, [])
-  useValidateAccountSettings(
-    authentication,
-    showAccountSetup,
-    languageId,
-    owner,
-    setShowAccountSetup
-  )
 
   return (
     <div className='h-screen w-screen flex flex-col' ref={mainScreenRef}>
       <Header
         title={title}
-        authentication={authentication || {}}
         resetResourceLayout={() => setCurrentLayout(null)}
         feedback={feedback}
         setFeedback={setFeedback}
       />
       <main className='flex flex-1 flex-col w-auto m-0 bg-gray-200'>
         {children}
-        {/* {showChildren || (authentication && !showAccountSetup) ? (
-          children
-        ) : (
-          <Onboarding
-            authentication={authentication}
-            authenticationComponent={authenticationComponent}
-          />
-        )} */}
       </main>
       <Footer
         buildHash={buildId?.hash}

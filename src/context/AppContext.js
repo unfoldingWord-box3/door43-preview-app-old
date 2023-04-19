@@ -1,13 +1,9 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/router';
 import PropTypes from 'prop-types';
-import { AuthContext } from '@context/AuthContext'
 import { StoreContext } from '@context/StoreContext'
-import { RepositoryApi, OrganizationApi } from 'dcs-js';
-import {usfmFilename} from '@common/BooksOfTheBible'
-import { decodeBase64ToUtf8 } from '@utils/base64Decode';
-import { LITERAL, SIMPLIFIED, CUSTOM } from '@common/constants';
-import { fetchFromUserBranch } from '@utils/fetchFromUserBranch';
-import { randomLetters } from '@utils/randomLetters';
+import { RepositoryApi, OrganizationApi } from 'dcs-js'
+import createResource from '@utils/createResource';
 
 export const AppContext = React.createContext({});
 
@@ -15,12 +11,11 @@ export const AppContext = React.createContext({});
 export default function AppContextProvider({
   children,
 }) {
-
-  const [books, setBooks] = useState([])
   const [ltStState, setLtStState] = useState('')
   const [refresh, setRefresh] = useState(true)
   const [repoClient, setRepoClient] = useState(null)
   const [organizationClient, setOrganizationClient] = useState(null)
+  const [resources, setResources] = useState([])
   // const [ep, /*setEp*/] = useState(new EpiteletePerfHtml({
   //   proskomma: null, docSetId: "unfoldingWord/en_ltst", options: { historySize: 100 }
   // }))
@@ -28,154 +23,100 @@ export default function AppContextProvider({
 
   const {
     state: {
-      authentication,
-    },
-  } = useContext(AuthContext)
-
-  const {
-    state: {
-      owner,
       server,
-      languageId,
     },
     actions: {
       setCurrentLayout,
     }
   } = useContext(StoreContext)
 
-  const getApiConfig = ({ token, basePath = "https://qa.door43.org/api/v1/" }) => ({
-    apiKey: token && ((key) => key === "Authorization" ? `token ${token}` : ""),
+  const router = useRouter()
+  const { path } = router.query
+
+  const getApiConfig = ({ basePath = "https://qa.door43.org/api/v1/" }) => ({
     basePath: basePath?.replace(/\/+$/, ""),
   })
 
-  useEffect(
-    () => {
-      if ( authentication && authentication?.token ) {
-          const _configuration = getApiConfig({ token: authentication.token.sha1, basePath:`${server}/api/v1/` });
-          setRepoClient(new RepositoryApi(_configuration))
-          setOrganizationClient(new OrganizationApi(_configuration))
-      }
-    },[authentication, server]
-  )
+  const _setResources = (value) => {
+    setResources(value)
+    _setRefresh(true)
+  }
 
-  const _setBooks = (value) => {
-    setBooks(value)
+  const _setRefresh = () => {
     setRefresh(true)
     setCurrentLayout(null)
   }
 
-  // monitor the refresh state and act when true
   useEffect(() => {
-    async function getContent() {
-      let _books = books
-
-      for (let i=0; i<_books.length; i++) {
-        if ( ! _books[i].content ) {
-          let _content = null
-          try {
-            switch ( _books[i].source ) {
-              case 'url':
-                let _url = _books[i].url
-                // auto change src/branch to raw/branch
-                _url = _url.replace('/src/branch/', '/raw/branch/')
-                const response = await fetch(_url)
-                const rawContent = await response.text()
-                _content = {
-                  content: rawContent,
-                  encoding: 'plain',
-                }
-                _books[i].docset = "org-unk/" + randomLetters(3) + "_" + randomLetters(3)
-                break;
-              case 'upload':
-                _content = {
-                  content: _books[i].usfmText,
-                  encoding: 'plain',
-                }
-                _books[i].docset = "org-unk/" + randomLetters(3) + "_" + randomLetters(3)
-                break;
-              case 'dcs':
-              default:
-                const _filename = usfmFilename(_books[ i ].bookId)
-                // const _content = await repoClient.repoGetContents(
-                //   owner,_repo,_filename
-                // ).then(({ data }) => data)
-
-                _content = await fetchFromUserBranch(
-                  _books[ i ].owner,
-                  _books[ i ].repo,
-                  _filename,
-                  _books[ i ].bookId,
-                  authentication,
-                  repoClient
-                )
-                let langAndAbbr
-                if (_books[i].repo.includes('_')) {
-                  langAndAbbr = _books[i].repo
-                } else {
-                  // work around for https://github.com/unfoldingWord/uw-editor/issues/38
-                  langAndAbbr = _books[i].repo + '_tla' // 'tla' = Three Letter Acronym
-                }
-                _books[i].docset = _books[i].owner + "/" + langAndAbbr
-                break;
-            }
-          } catch (e) {
-            console.error(e)
-            _content = "NO CONTENT AVAILABLE"
-          }
-          _books[ i ].content = _content
-
-          // note that "content" is the JSON returned from DCS.
-          // the actual content is base64 encoded member element "content"
-          let _usfmText;
-          if (_content && _content.encoding && _content.content) {
-            if ('base64' === _content.encoding) {
-              _usfmText = decodeBase64ToUtf8(_content.content)
-            } else {
-              _usfmText = _content.content
-            }
-            _books[i].usfmText = _usfmText
-
-            // extract bookId from text
-            const _regex = /^\\id ([A-Z0-9]{3})/;
-            const _found = _usfmText.match(_regex);
-            const _textBookId = _found[1];
-            console.log("ID from USFM Text:", _textBookId);
-            // if no id found, consider it invalid USFM
-            if ( ! _textBookId ) {
-              _books[i].bookId = 'unknown'
-              _books[i].usfmText = null
-              _books[i].content = "INVALID USFM: No 'id' marker"
-            } else {
-              // let id from usfm text take precedence
-              if ( _books[i].bookId !== _textBookId ) {
-                _books[i].bookId = _textBookId
-              }
-            }
-          } else {
-            _books[i].usfmText = null
-          }
-        }
+    console.log("IN PATH EFFECT: ", path)
+    const handleResource = async () => {
+      let owner, repo, ref, url, source = ''
+      if (path[0].startsWith('http')) {
+        url = path.join('/')
+        source = 'url'
+      } else {
+        [owner, repo, ref] = path
+        source = 'dcs'
+        if (! ref)
+          ref = 'master'
       }
-      setBooks(_books)
-      console.log("setBooks():",_books)
-      setRefresh(false)
+      console.log("HERE:", owner, repo, ref)
+      const resource = await createResource({owner, repo, ref, source, url, repoClient})
+      console.log("resource: ", resource)
+      console.log("HERE2")
+      setResources([resource])
     }
-    if (refresh && authentication && owner && server && languageId) {
-      getContent().catch(console.error)
-    }
-  }, [authentication, owner, server, languageId, refresh, books, setBooks, repoClient])
 
+    const handleBibleReference = () => {
+      const [bookId, chapter, verse] = path.slice(3)
+      if (bookId) {
+        setBibleReference({bookId, chapter: chapter || '1', verse: verse || '1'})
+      }
+    }
+
+    console.log("ROUTER PATH: ", path)
+    if (router.isReady && path && path.length) {
+      console.log("ROUTER PATH", path)
+      handleResource().catch(console.error)
+      handleBibleReference()
+    }
+  }, [router.isReady, path])
+
+  useEffect(() => {
+    if (refresh && resources.length) {
+      const _resources = []
+      resources.forEach(resource => {
+        if (resource.source === 'dcs') {
+          resource.content = 'Loading...'
+          resource.rawContent = ''
+          resource.commit = null
+          resource.commitId = ''
+        }
+        _resources.push(resource)
+      })
+      setRefresh(false)
+      console.log("HERE1")
+      setResources(_resources)
+    }
+  }, [resources, refresh])
+
+  useEffect(() => {
+    const _configuration = getApiConfig({ basePath: `${server}/api/v1/` });
+    setRepoClient(new RepositoryApi(_configuration))
+    setOrganizationClient(new OrganizationApi(_configuration))
+  }, [server])
 
   // create the value for the context provider
   const context = {
     state: {
-      books,
+      resources,
       ltStState,
       repoClient,
       organizationClient,
     },
     actions: {
-      setBooks: _setBooks,
+      setResources: _setResources,
+      setRefresh: _setRefresh,
       setLtStState,
     }
   };

@@ -75,8 +75,7 @@ export default function TranslationSettings({ authentication }) {
       let errorCode = 0
 
       try {
-        const orgs = await doFetch(`${server}/api/v1/user/orgs`,
-          authentication, HTTP_GET_MAX_WAIT_TIME)
+        const orgs = await doFetch(`${server}/api/v1/user/orgs`, HTTP_GET_MAX_WAIT_TIME)
           .then(response => {
             if (response?.status !== 200) {
               errorCode = response?.status
@@ -112,10 +111,8 @@ export default function TranslationSettings({ authentication }) {
       }
     }
 
-    if (authentication) {
-      getOrgs()
-    }
-  }, [authentication, server, setLastError, logout, router])
+    getOrgs()
+  }, [server, setLastError])
 
   useEffect(() => {
     async function getLanguages() {

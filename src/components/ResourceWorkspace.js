@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
-//import useDeepEffect from 'use-deep-compare-effect';
+//import useDeepEffect from 'use-deep-compare-effect'
 
 import { Workspace } from 'resource-workspace-rcl'
 import { makeStyles } from '@mui/styles'
@@ -11,12 +11,12 @@ import {
   processNetworkError,
   reloadApp,
 } from '@utils/network'
-import { useRouter } from 'next/router'
 import { HTTP_CONFIG } from '@common/constants'
 import NetworkErrorPopup from '@components/NetworkErrorPopUp'
 import ResourceWorkspaceCard from './ResourceWorkspaceCard'
 import useStoreContext from '@hooks/useStoreContext'
 import EmptyMessage from './EmptyMessage'
+
 
 const useStyles = makeStyles(() => ({
   root: {
@@ -35,40 +35,30 @@ const useStyles = makeStyles(() => ({
 }))
 
 function ResourceWorkspace() {
-  const router = useRouter()
-  console.log(router.query);
   const classes = useStyles()
   const [workspaceReady, setWorkspaceReady] = useState(false)
   const [networkError, setNetworkError] = useState(null)
 
   const {
-    state: { books, ltStState },
-    actions: { setBooks, setLtStState },
+    state: { 
+      resources,
+      ltStState
+    },
+    actions: {
+      setLtStState,
+      setResources,
+    },
   } = useContext(AppContext)
-
-  const removeBook = id => {
-    const _books = books.filter(b => {
-      return b.id !== id
-    })
-    setBooks(_books)
-  }
 
   const {
     state: {
       server,
-      appRef,
-      owner,
-      repo,
-      languageId,
       currentLayout,
     },
     actions: {
       setCurrentLayout,
       setLastError,
-      setOwner,
-      setRepo,
-      setLanguageId,
-      setAppRef,
+      setBibleReference,
       onReferenceChange,
     },
   } = useStoreContext()
@@ -139,28 +129,18 @@ function ResourceWorkspace() {
   }
 
   useEffect(() => {
-    console.log(router.query);
-    const { owner, repo, refEtc } = router.query;
-    console.log("HERE: ", owner, repo, refEtc)
-    if (owner && repo) {
-      setOwner(owner)
-      setRepo(repo)
-      setLanguageId(repo.split('_')[0])
-      if (refEtc && refEtc[0])
-        setAppRef(refEtc[0])
-      if (refEtc && refEtc[1])
-        onReferenceChange(refEtc[1], "1", "1")
-    }
-  }, [router.query])
-
-  useEffect(() => {
-    setWorkspaceReady(false)
-
-    if (owner && languageId && appRef && server) {
-      // clearCaches()
+    if (resources.length)
       setWorkspaceReady(true)
-    } // eslint-disable-next-line
-  }, [owner, languageId, appRef, server])
+    else
+      setWorkspaceReady(false)
+  }, [resources])
+
+  const removeResource = id => {
+    console.log("REMOVE RESOURCE", id)
+    const _resources = resources.filter(resource => resource.id !== id)
+    console.log(resources, _resources)
+    setResources(_resources)
+  }
 
   const config = {
     server,
@@ -173,7 +153,7 @@ function ResourceWorkspace() {
       {showNetworkError()}
       <CircularProgress size={180} />
     </>
-  ) : !!books.length ? (
+  ) : !!resources.length ? (
     <Workspace
       layout={currentLayout}
       classes={classes}
@@ -245,22 +225,20 @@ function ResourceWorkspace() {
         [20, 20],
       ]}
     >
-      {books.map(data => (
+      {resources.map(resource => (
         <ResourceWorkspaceCard
-          key={data.id}
-          id={data.id}
-          bookId={data.bookId}
-          docSetId={data.docset}
-          data={data}
+          key={resource.id}
+          id={resource.id}
+          resource={resource}
           classes={classes}
-          onClose={removeBook}
+          onClose={removeResource}
         />
       ))}
     </Workspace>
   ) : (
     <EmptyMessage
       sx={{ color: 'text.disabled' }}
-      message={'No books to display, please add a new book.'}
+      message={'Invalid resource'}
     ></EmptyMessage>
   )
 }

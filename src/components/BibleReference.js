@@ -3,7 +3,7 @@ import useEffect from 'use-deep-compare-effect'
 import BibleReference, { useBibleReference } from 'bible-reference-rcl'
 import makeStyles from '@material-ui/core/styles/makeStyles'
 import { StoreContext } from '@context/StoreContext'
-import { BIBLES_ABBRV_INDEX } from '@common/BooksOfTheBible'
+
 
 const useStyles = makeStyles((theme) => ({
   underline: {
@@ -27,24 +27,15 @@ function BibleReferenceComponent(props) {
     },
   } = useContext(StoreContext)
 
-  console.log("BEFORE uBR: ", bookId, chapter, verse)
+  console.log(bookId, chapter, verse)
+
+  // console.log("BEFORE uBR: ", bookId, chapter, verse)
   const { state, actions } = useBibleReference({
     initialBook: bookId ? bookId : 'mat',
     initialChapter: chapter ? chapter : '1',
     initialVerse: verse ? verse : '1',
     onChange: onReferenceChange,
   })
-
-  useEffect(() => {
-    console.log("CHANGING BR 1!!!!", bookId, chapter, verse)
-    if (bookId && chapter && verse && ((state.bookId !== bookId) || (state.chapter !== chapter) || (state.verse !== verse))) {
-      console.log("CHANGING BR 2!!!!", bookId, chapter, verse)
-      // update reference if external change (such as user log in causing saved reference to be loaded)
-      actions.goToBookChapterVerse(bookId, chapter, verse)
-    }
-  }, [{
-    bookId, chapter, verse,
-  }])
 
   useEffect(() => {
     if (supportedBibles?.length) {

@@ -1,138 +1,63 @@
-import { useEffect, useState, useContext, createElement } from 'react'
+import { useContext } from 'react'
 import PropTypes from 'prop-types'
 import { Card } from 'translation-helps-rcl'
-import { UsfmEditor } from 'uw-editor'
 import { BIBLE_AND_OBS } from '@common/BooksOfTheBible'
-import { AuthContext } from '@context/AuthContext'
 import { StoreContext } from '@context/StoreContext'
-import { AppContext } from '@context/AppContext'
 import React from 'react';
 import CircularProgress from './CircularProgress'
-import { saveToUserBranch } from '@utils/saveToUserBranch'
 
-export default function ScriptureWorkspaceCard({
+export default function ResourceWorkspaceCard({
   id,
-  bookId,
-  docSetId,
-  data,
+  resource,
+  onClose: removeResource,
   classes,
-  onClose: removeBook,
 }) {
-
-  const [doSave, setDoSave] = useState(false)
-
   const {
     state: {
-      authentication,
-    },
-  } = useContext(AuthContext)
-
-  const {
-    state: {
-      owner,
+      bibleReference: {
+        bookId,
+      },
     },
   } = useContext(StoreContext)
-
-  const {
-    state: {
-        books,
-        repoClient,
-        ep,
-    },
-    actions: {
-      setBooks,
-    }
-  } = useContext(AppContext)
-
-  // Save Feature
-  useEffect(() => {
-    async function saveContent() {
-      if ( data.readOnly ) {
-        const url = URL.createObjectURL(new Blob([doSave]))
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${bookId}.usfm`
-        a.click()
-        URL.revokeObjectURL(url)
-      } else {
-        const _content = await saveToUserBranch(
-          data,
-          data.owner,
-          doSave,
-          authentication,
-          repoClient
-        )
-        let _books = books
-        for (let i = 0; i < _books.length; i++) {
-          if (_books[ i ].id === id) {
-            _books[ i ].content = _content
-            setBooks(_books)
-            break
-          }
-        }
-      }
-      setDoSave(null)
-    }
-    if ( doSave ) {
-      console.log("New updated USFM:", doSave)
-      saveContent()
-    }
-  }, [doSave, books, setBooks, id, docSetId, data, owner, ep, authentication, repoClient, bookId])
 
   // const editorProps = {
   //   onSave: (bookCode,usfmText) => setDoSave(usfmText),
   //   docSetId,
-  //   // usfmText: data.usfmText,
-  //   bookId: data.bookId,
+  //   // usfmText: resource.rawContent,
+  //   bookId: bookId,
   // }
 
   let title = '';
-  if ( BIBLE_AND_OBS[bookId.toLowerCase()] ) {
-    title += BIBLE_AND_OBS[bookId.toLowerCase()];
+  if ( BIBLE_AND_OBS[bookId] ) {
+    title += BIBLE_AND_OBS[bookId];
   }
-  if ( data.url ) {
-    title += " (" + data.url + ")"
+  if ( resource.url ) {
+    title += " (" + resource.url + ")"
   } else {
-    title += " (" + id.substr(4) + ")"
+    title += " (" + resource.docSetId + ")"
   }
-  console.log("owner and id:",owner,id)
+  console.log("owner and id:", resource.owner, id)
   return (
     <Card title={title}
       classes={classes}
       hideMarkdownToggle={true}
       closeable={true}
-      onClose={() => removeBook(id)}
-      key={bookId}
+      onClose={() => removeResource(id)}
+      key={resource.id}
       disableSettingsButton={true}
     >
-      {
-        // ep[docSetId]?.localBookCodes().includes(bookId.toUpperCase())
-        data.usfmText
+      {(
+        typeof resource.content === "string"
         ?
-          <div className="text-sm max-w-prose">
-          <UsfmEditor key="1"
-            bookId={data.bookId}
-            docSetId={docSetId}
-            usfmText={data.usfmText}
-            onSave={ (bookCode,usfmText) => setDoSave(usfmText) }
-            editable={id.endsWith(owner) ? true : false}
-          />
-          </div>
+        <div><h1>{resource.content}</h1></div>
         :
-        (
-          typeof data.content === "string"
-          ?
-          <div><h1>{data.content}</h1></div>
-          :
-          <CircularProgress/>
-        )
-
-      }
+        <CircularProgress/>
+      )}
     </Card>
   )
 }
 
-ScriptureWorkspaceCard.propTypes = {
+ResourceWorkspaceCard.propTypes = {
   bookId: PropTypes.string,
   classes: PropTypes.object,
 }

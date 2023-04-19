@@ -35,17 +35,15 @@ export default function Application({ Component, pageProps }) {
       <AppHead title={APP_NAME} />
         {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
         <CssBaseline />
-        <AuthContextProvider>
-          <StoreContextProvider>
-              <PkCacheProvider>
-                <AppContextProvider>
-                  <Layout>
-                    <Component {...pageProps} />
-                  </Layout>
-                  </AppContextProvider>
-              </PkCacheProvider>
-          </StoreContextProvider>
-        </AuthContextProvider>
+        <StoreContextProvider>
+          <PkCacheProvider>
+            <AppContextProvider>
+              <Layout>
+                <Component {...pageProps} />
+               </Layout>
+            </AppContextProvider>
+          </PkCacheProvider>
+        </StoreContextProvider>
       </ThemeProvider>
       </NonSSRWrapper>
     </div>

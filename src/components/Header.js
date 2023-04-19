@@ -9,15 +9,15 @@ import Toolbar from '@mui/material/Toolbar'
 import MenuIcon from '@mui/icons-material/Menu'
 import AppBar from '@mui/material/AppBar'
 import Fab from '@mui/material/Fab'
-import SearchIcon from '@mui/icons-material/Search'
+import AddIcon from '@mui/icons-material/Add'
 import Drawer from '@components/Drawer'
 import Snackbar from '@mui/material/Snackbar'
 import { StoreContext } from '@context/StoreContext'
 import { AppContext } from '@context/AppContext'
 import FeedbackPopup from '@components/FeedbackPopup'
-import SelectBookPopup from './SelectBookPopup'
-import { randomLetters } from '@utils/randomLetters'
+import SelectResourcePopup from './SelectResourcePopup'
 import BibleReference from '@components/BibleReference'
+import createResource from '@utils/createResource'
 
 const useStyles = makeStyles(theme => ({
   root: { flexGrow: 1 },
@@ -54,13 +54,22 @@ export default function Header({
 
   const [drawerOpen, setOpen] = useState(false)
   const {
-    state: { owner },
-    actions: { checkUnsavedChanges },
+    state: {
+      server
+    },
   } = useContext(StoreContext)
+
   const {
-    state: { books },
-    actions: { setBooks, setLtStState },
+    state: {
+      resources,
+      repoClient,
+    },
+    actions: {
+      setResources, 
+      setLtStState,
+    },
   } = useContext(AppContext)
+  
   const handleDrawerOpen = () => {
     if (!drawerOpen) {
       setOpen(true)
@@ -85,88 +94,28 @@ export default function Header({
     setFeedback && setFeedback(false)
   }
 
-  const onNext = ({
-    pushAccess,
-    selectedBook,
-    usfmSource,
-    owner,
-    repository,
-    languageId,
-    url,
-    usfmData,
-    uploadedFilename,
-  }) => {
-    if (!books || !setBooks) {
-      return
-    }
-    let _books = [...books]
-    let _entry = { id: null, bookId: null, source: usfmSource, content: null }
-    switch (usfmSource) {
-      case 'url':
-        if (!url) {
-          return
+  const handleOnNext = async (data) => {
+    data['server'] = server
+    data['repoClient'] = repoClient
+    data['resources'] = resources 
+    const resource = createResource(data)
+    if (resource) {
+      let found = -1
+      for (let i = 0; i < resources.length; i++) {
+        if (resources[i].url && resources[i].url === resource.url) {
+          found = i
+          break
         }
-        const _owner = randomLetters(3)
-        const _lang = randomLetters(2)
-        const found = url.match(/[-_\/](?<bookId>[a-zA-Z_]*)\.usfm$/)
-        if (found) {
-          _entry.bookId = found.groups.bookId
-        } else {
-          _entry.bookId = url.substr(-10)
-        }
-        _entry.bookId = _entry.bookId.substr(-3)
-        _entry.id = `${_entry.bookId}-${_owner}-${_lang}`
-        _entry.url = url
-        _entry.readOnly = true
-        break
-      case 'upload':
-        if (!usfmData) {
-          return
-        }
-        _entry.url = uploadedFilename
-        const foundInFilename = uploadedFilename.match(
-          /(?<bookId>[a-zA-Z_]*)\.usfm$/
-        )
-        if (foundInFilename) {
-          _entry.bookId = foundInFilename.groups.bookId
-        } else {
-          _entry.bookId = foundInFilename.substr(-10)
-        }
-        _entry.bookId = _entry.bookId.substr(-3)
-
-        _entry.id = `${uploadedFilename}`
-        _entry.usfmText = usfmData
-        _entry.readOnly = true
-        break
-      case 'dcs':
-      default:
-        if (!owner || !repository) {
-          return
-        }
-        _entry.id = `${selectedBook.id}-${repository}-${owner}`
-        _entry.repo = repository
-        _entry.owner = owner
-        _entry.languageId = languageId
-        _entry.bookId = selectedBook.id
-        _entry.readOnly = !pushAccess
-        break
-    }
-    let found = -1
-    for (let i=0; i<_books.length; i++) {
-      if ( _books[i].id === _entry.id ) {
-        found = i
-        break
+      }
+      if (found > -1) {
+        console.log("resource already loaded:", resource.url)
+        setAlreadyOpenNotice("Resource is already open")
+      } else {
+        console.log("New Resource:", resource.docSetId, resource.url)
+        console.log("HERE4")
+        setResources(resources.append(resource))
       }
     }
-    if ( found > -1 ) {
-      console.log("book already loaded:", _entry.id)
-      setAlreadyOpenNotice(true)
-    } else {
-      console.log("adding book:", _entry.id)
-      _books.push(_entry)
-      setBooks(_books)
-    }
-    console.log('onNext() _books:', _books)
   }
 
   return (
@@ -196,8 +145,6 @@ export default function Header({
             <BibleReference />
           </div>)}
           <div className='flex flex-1 justify-end'>
-          {router.pathname === '/' && (
-            <>
               <Fab
                 color='primary'
                 aria-label='extended'
@@ -206,15 +153,14 @@ export default function Header({
                   setShowModal(true)
                 }}
               >
-                <SearchIcon className={classes.extendedIcon} />
-                Search
+                <AddIcon className={classes.extendedIcon} />
+                Resource
               </Fab>
-              <SelectBookPopup
-                onNext={onNext}
+              <SelectResourcePopup
+                onNext={handleOnNext}
                 showModal={showModal}
                 setShowModal={setShowModal}
               />
-            </>)}
           </div>
         </Toolbar>
       </AppBar>
@@ -222,7 +168,6 @@ export default function Header({
         open={drawerOpen}
         onOpen={handleDrawerOpen}
         onClose={handleDrawerClose}
-        checkUnsavedChanges={checkUnsavedChanges}
         resetResourceLayout={resetResourceLayout}
         showFeedback={doShowFeedback}
       />
@@ -233,7 +178,7 @@ export default function Header({
         open={alreadyOpenNotice}
         autoHideDuration={6000}
         onClose={handleAlreadyOpenNoticeClose}
-        message="Book is already open"
+        message="Resource is already open"
         // action={action}
       />
       <div className={classes.offset} />

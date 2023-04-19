@@ -20,9 +20,6 @@ export default function StoreContextProvider(props) {
   const [server, setServer] = useLocalStorage('server', 'git.door43.org')
   const [mainScreenRef, setMainScreenRef] = useState(null)
   const [lastError, setLastError] = useState(null)
-  const [owner, setOwner] = useLocalStorage('owner', '')
-  const [repo, setRepo] = useLocalStorage('repo', '')
-  const [languageId, setLanguageId] = useLocalStorage('languageId', '')
   const [showAccountSetup, setShowAccountSetup] = useLocalStorage(
     'showAccountSetup',
     true
@@ -31,20 +28,16 @@ export default function StoreContextProvider(props) {
   const [selectedQuote, setQuote] = useLocalStorage('selectedQuote', null)
   // TODO blm: for now we use unfoldingWord for original language bibles
   const [scriptureOwner, setScriptureOwner] = useState('unfoldingWord')
-  const [appRef, setAppRef] = useLocalStorage('appRef', 'master') // default for app
-  const [bibleReference, setBibleReference] = useLocalStorage(
-    'bibleReference',
-    {
-      bookId: 'mat',
-      chapter: '1',
-      verse: '1',
-    }
-  )
   const [greekRepoUrl, setGreekRepoUrl] = useLocalStorage('greekRepoUrl', null)
   const [hebrewRepoUrl, setHebrewRepoUrl] = useLocalStorage(
     'hebrewRepoUrl',
     null
   )
+  const [bibleReference, setBibleReference] = useLocalStorage('bibleReference', {
+    bookId: 'mat',
+    chapter: '1',
+    verse: '1',
+  })
   const [supportedBibles, setSupportedBibles] = useLocalStorage('bibles', [])
   const [currentLayout, setCurrentLayout] = useLocalStorage(
     'resourceLayout',
@@ -87,13 +80,10 @@ export default function StoreContextProvider(props) {
     state: {
       showAccountSetup,
       scriptureOwner,
-      bibleReference,
       selectedQuote,
-      languageId,
       taArticle,
       server,
-      appRef,
-      owner,
+      bibleReference,
       supportedBibles,
       currentLayout,
       useUserLocalStorage,
@@ -107,12 +97,9 @@ export default function StoreContextProvider(props) {
       onReferenceChange,
       setShowAccountSetup,
       setScriptureOwner,
-      setLanguageId,
-      setAppRef,
       setServer,
       setQuote,
-      setOwner,
-      setRepo,
+      setBibleReference,
       setSupportedBibles,
       setCurrentLayout,
       setLastError,

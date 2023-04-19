@@ -25,18 +25,13 @@ export default function Drawer({
   onOpen,
   onClose,
   resetResourceLayout,
-  checkUnsavedChanges,
   showFeedback,
 }) {
   const router = useRouter()
 
   async function onSettingsClick() {
-    const okToContinue = await checkUnsavedChanges()
-
-    if (okToContinue) {
-      router.push('/settings')
-      onClose()
-    }
+    router.push('/settings')
+    onClose()
   }
 
   function onFeedbackClick() {
@@ -175,6 +170,5 @@ Drawer.propTypes = {
   onOpen: PropTypes.func,
   onClose: PropTypes.func,
   resetResourceLayout: PropTypes.func,
-  checkUnsavedChanges: PropTypes.func,
   showFeedback: PropTypes.func,
 }
